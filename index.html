@@ -8,7 +8,7 @@
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="icon" type="image/svg+xml" href="icon.svg" />
-        <link rel="apple-touch-icon" href="icon-512.png" />
+        <link rel="apple-touch-icon" href="apple-touch-icon.png" />
         <link rel="manifest" href="manifest.webmanifest" />
         <title>📝</title>
         <style>
@@ -222,6 +222,10 @@
             (function () {
                 'use strict';
 
+                // Full-hash routing: the deep path lives in location.hash, so the
+                // app behaves identically on file://, COS and GitHub (root domain).
+                // 404.html maps any legacy real-path request back to a hash route.
+
                 const editor = document.getElementById('note-editor');
                 const hostDisplay = document.getElementById('hostDisplay');
                 const pathInput = document.getElementById('pathInput');
@@ -249,17 +253,14 @@
                     }).join('/');
                 }
                 function keyPath() {
-                    if (isFile) {
-                        const h = location.hash ? location.hash.slice(1) : '';
-                        return normalize(decodePath(h));
-                    }
-                    return normalize(decodePath(location.pathname));
+                    const h = location.hash ? location.hash.slice(1) : '';
+                    return normalize(decodePath(h));
                 }
                 let currentPath = keyPath();
                 if (!isFile && location.host) {
-                    hostDisplay.textContent = location.host + '/';
+                    hostDisplay.textContent = location.host + '/#/';
                 } else {
-                    hostDisplay.textContent = '📄 本地/';
+                    hostDisplay.textContent = '📄 /#/';
                 }
                 pathInput.value = currentPath === '/' ? '' : currentPath.slice(1);
 
@@ -304,6 +305,11 @@
                         showSaved();
                     }, 400);
                 }
+                function saveNow() {
+                    clearTimeout(saveTimer);
+                    localStorage.setItem(getKey(), editor.value);
+                    showSaved();
+                }
 
                 editor.addEventListener('keydown', (e) => {
                     if (e.key === 'Tab') {
@@ -336,18 +342,9 @@
                     }
                     currentPath = target;
                     pathInput.value = target === '/' ? '' : target.slice(1);
-                    if (isFile) {
-                        if (target === '/') {
-                            if (location.hash) history.replaceState(null, '', location.pathname);
-                            load();
-                        } else {
-                            location.hash = target;
-                        }
-                        return;
-                    }
-                    try {
-                        history.pushState({ path: target }, '', target);
-                    } catch (err) {
+                    if (target === '/') {
+                        if (location.hash) history.replaceState(null, '', location.pathname);
+                    } else {
                         location.hash = target;
                     }
                     load();
@@ -362,16 +359,28 @@
                 });
                 pathInput.addEventListener('focus', () => pathInput.select());
                 window.addEventListener('popstate', () => {
-                    if (isFile) return;
-                    currentPath = keyPath();
-                    pathInput.value = currentPath === '/' ? '' : currentPath.slice(1);
+                    const p = keyPath();
+                    if (p === currentPath) return;
+                    currentPath = p;
+                    pathInput.value = p === '/' ? '' : p.slice(1);
                     load();
                 });
                 window.addEventListener('hashchange', () => {
-                    if (!isFile) return;
-                    currentPath = keyPath();
-                    pathInput.value = currentPath === '/' ? '' : currentPath.slice(1);
+                    const p = keyPath();
+                    if (p === currentPath) return;
+                    currentPath = p;
+                    pathInput.value = p === '/' ? '' : p.slice(1);
                     load();
+                });
+
+                // Cross-instance sync: when this tab loses focus or is hidden, flush
+                // to storage immediately; when it regains focus/visibility, reload the
+                // latest saved content so same-path instances stay consistent.
+                window.addEventListener('blur', saveNow);
+                window.addEventListener('focus', load);
+                document.addEventListener('visibilitychange', function () {
+                    if (document.visibilityState === 'hidden') saveNow();
+                    else load();
                 });
 
                 const addr = document.getElementById('addr');
@@ -379,10 +388,7 @@
                 let toastTimer = null;
 
                 function fullUrl() {
-                    if (isFile) {
-                        return location.pathname + '#' + currentPath;
-                    }
-                    return location.origin + currentPath;
+                    return location.origin + location.pathname + '#' + currentPath;
                 }
                 function fallbackCopy(text) {
                     const ta = document.createElement('textarea');

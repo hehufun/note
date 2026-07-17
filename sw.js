@@ -1,5 +1,5 @@
 const CACHE = 'note-v3';
-const ASSETS = ['index.html', 'icon.svg', 'icon.png', 'manifest.webmanifest'];
+const ASSETS = ['index.html', 'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
     e.waitUntil(
