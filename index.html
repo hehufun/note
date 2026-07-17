@@ -222,6 +222,20 @@
             (function () {
                 'use strict';
 
+                // Bootstrap redirect: if loaded from a real (non-root) pathname
+                // such as /1 — which happens when the Service Worker serves
+                // index.html for any path, or on a direct hit — rewrite to the
+                // canonical hash route /#/1 so keyPath() reads the deep path.
+                (function () {
+                    var p = location.pathname;
+                    if (p && p !== '/' && p !== '/index.html' && p !== '/404.html') {
+                        location.replace('/#' + p + location.search);
+                    }
+                })();
+                if (location.pathname !== '/' && location.pathname !== '/index.html' && location.pathname !== '/404.html' && !location.hash) {
+                    return; // hash navigation already scheduled; skip app init
+                }
+
                 // Full-hash routing: the deep path lives in location.hash, so the
                 // app behaves identically on file://, COS and GitHub (root domain).
                 // 404.html maps any legacy real-path request back to a hash route.

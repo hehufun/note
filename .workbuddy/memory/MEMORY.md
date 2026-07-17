@@ -4,7 +4,9 @@
 - 通过 GitHub Pages 托管，自定义域名见 `CNAME`（`note.hehu.fun`，**根域**，非 `/note/` 子路径）。
 - 腾讯云 COS 也走根域。两者皆根域 → 笔记 key（`note-hehu-fun-` + hash 路径）完全一致，内容互通。
 - **全 hash 路由（统一）**：本地 `file://` 与线上 `http(s)` 都走 `#/foo/bar`，不再区分。原因：hash 是唯一「不发给服务器、可在 file:// 下用」的客户端路由符；真实 pathname 在 file:// 下无法映射、且 GitHub 子路径会重复前缀。
-- `404.html` 把遗留真实路径请求重定向到根域 hash 路由：`location.replace('/#' + location.pathname)`。
+- **真实路径 → hash 统一（双路兜底）**：`/foo/bar` 这类无 `#` 的真实路径，无论走哪条链路最终都统一成 `#/foo/bar`：
+  - 冷启动（SW 未装）：GitHub 404 → `404.html` 重定向 `location.replace('/#' + location.pathname + location.search)`。
+  - 暖路径（SW 已装 / COS 404→index 返回 index.html）：`index.html` 顶部**自举重定向**——若 `location.pathname` 为非根真实路径（`/`/`/index.html`/`/404.html` 除外且当前无 hash），则 `location.replace('/#' + pathname)` 并跳过初始化。`index.html` 不自举则 SW 返回 index.html 时读到空 hash 会落到根笔记。
 - 笔记内容存 `localStorage`，key 前缀 `note-hehu-fun-` + 解码后 hash 路径。
 
 ## 图标约定（来自 appstore-images.zip）
