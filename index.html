@@ -1,100 +1,446 @@
 <!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWZpbGUtdGV4dC1pY29uIGx1Y2lkZS1maWxlLXRleHQiPjxwYXRoIGQ9Ik02IDIyYTIgMiAwIDAgMS0yLTJWNGEyIDIgMCAwIDEgMi0yaDhhMi40IDIuNCAwIDAgMSAxLjcwNC43MDZsMy41ODggMy41ODhBMi40IDIuNCAwIDAgMSAyMCA4djEyYTIgMiAwIDAgMS0yIDJ6Ii8+PHBhdGggZD0iTTE0IDJ2NWExIDEgMCAwIDAgMSAxaDUiLz48cGF0aCBkPSJNMTAgOUg4Ii8+PHBhdGggZD0iTTE2IDEzSDgiLz48cGF0aCBkPSJNMTYgMTdIOCIvPjwvc3ZnPg=="
-    />
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWZpbGUtdGV4dC1pY29uIGx1Y2lkZS1maWxlLXRleHQiPjxwYXRoIGQ9Ik02IDIyYTIgMiAwIDAgMS0yLTJWNGEyIDIgMCAwIDEgMi0yaDhhMi40IDIuNCAwIDAgMSAxLjcwNC43MDZsMy41ODggMy41ODhBMi40IDIuNCAwIDAgMSAyMCA4djEyYTIgMiAwIDAgMS0yIDJ6Ii8+PHBhdGggZD0iTTE0IDJ2NWExIDEgMCAwIDAgMSAxaDUiLz48cGF0aCBkPSJNMTAgOUg4Ii8+PHBhdGggZD0iTTE2IDEzSDgiLz48cGF0aCBkPSJNMTYgMTdIOCIvPjwvc3ZnPg=="
-    />
-    <title>记事本</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      html {
-        color-scheme: light dark;
-      }
-      body {
-        height: 100vh;
-        overflow: hidden;
-      }
-      #note-editor {
-        width: 100%;
-        height: 100%;
-        border: none;
-        outline: none;
-        resize: none;
-        padding: 16px;
-        font-family: system-ui, sans-serif;
-        line-height: 1.5;
-        white-space: pre-wrap;
-        tab-size: 4;
-      }
-    </style>
-  </head>
-  <body>
-    <textarea id="note-editor" autofocus></textarea>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta name="theme-color" content="#f5f3f0" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="icon" type="image/svg+xml" href="icon.svg" />
+        <link rel="apple-touch-icon" href="icon-512.png" />
+        <link rel="manifest" href="manifest.webmanifest" />
+        <title>📝</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            :root {
+                --bg: #f5f3f0;
+                --card: #fff;
+                --text: #2c2c2c;
+                --muted: #7a7a7a;
+                --border: #e6e2dc;
+                --radius: 12px;
+                --font: system-ui, -apple-system, sans-serif;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #191919;
+                    --card: #262626;
+                    --text: #e8e6e2;
+                    --muted: #8a8a8a;
+                    --border: #333;
+                }
+            }
+            html,
+            body {
+                height: 100vh;
+                height: 100dvh;
+            }
+            body {
+                overflow: hidden;
+                background: var(--bg);
+                color: var(--text);
+                font: 13px/1.5 var(--font);
+                display: flex;
+                flex-direction: column;
+                padding: calc(10px + env(safe-area-inset-top))
+                    calc(14px + env(safe-area-inset-right))
+                    calc(8px + env(safe-area-inset-bottom))
+                    calc(14px + env(safe-area-inset-left));
+            }
+            .top-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding-bottom: 8px;
+                border-bottom: 1px solid var(--border);
+                color: var(--muted);
+            }
+            .top-bar .addr {
+                display: flex;
+                align-items: center;
+                min-width: 0;
+                flex: 1;
+                overflow: hidden;
+                cursor: pointer;
+                user-select: none;
+                gap: 6px;
+            }
+            .top-bar .addr .host,
+            .top-bar .addr .path-input {
+                cursor: text;
+                user-select: text;
+            }
+            .top-bar .host {
+                color: var(--muted);
+                font-size: 14px;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            .top-bar .path-input {
+                flex: 1;
+                min-width: 0;
+                border: none;
+                outline: none;
+                background: transparent;
+                color: var(--text);
+                font: 14px/1.5 var(--font);
+                padding: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .top-bar .icon {
+                flex-shrink: 0;
+                font-size: 14px;
+                line-height: 1;
+                cursor: pointer;
+                user-select: none;
+                opacity: 0.85;
+            }
+            .top-bar .icon.typing,
+            .top-bar .icon.loading {
+                animation: pulse 0.8s infinite alternate;
+            }
+            .top-bar .dot {
+                width: 9px;
+                height: 9px;
+                border-radius: 50%;
+                background: var(--muted);
+                flex-shrink: 0;
+            }
+            .top-bar .dot.saved {
+                background: #4caf50;
+            }
+            .top-bar .dot.typing {
+                background: #ffb74d;
+                animation: pulse 0.8s infinite alternate;
+            }
+            .top-bar .dot.loading {
+                background: #90a4ae;
+                animation: pulse 0.6s infinite alternate;
+            }
+            @keyframes pulse {
+                from {
+                    opacity: 0.4;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            .editor-wrap {
+                flex: 1;
+                min-height: 0;
+                padding: 8px 0 6px;
+            }
+            #note-editor {
+                width: 100%;
+                height: 100%;
+                border: none;
+                outline: none;
+                resize: none;
+                padding: 14px 16px;
+                font: 14px/1.6 var(--font);
+                white-space: pre-wrap;
+                tab-size: 4;
+                background: var(--card);
+                color: var(--text);
+                border-radius: var(--radius);
+                border: 1px solid transparent;
+            }
+            #note-editor:focus {
+                border-color: var(--border);
+            }
+            #note-editor::placeholder {
+                color: var(--muted);
+                opacity: 0.5;
+                font-size: 16px;
+            }
+            #note-editor::-webkit-scrollbar {
+                width: 5px;
+            }
+            #note-editor::-webkit-scrollbar-thumb {
+                background: var(--border);
+                border-radius: 10px;
+            }
+            .footer {
+                flex-shrink: 0;
+                padding-top: 4px;
+                text-align: center;
+                font-size: 12px;
+                color: var(--muted);
+                opacity: 0.4;
+            }
+            .footer:hover {
+                opacity: 0.8;
+            }
+            .toast {
+                position: fixed;
+                left: 50%;
+                bottom: 26px;
+                transform: translateX(-50%) translateY(8px);
+                background: var(--text);
+                color: var(--bg);
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease, transform 0.2s ease;
+                z-index: 50;
+                max-width: 90vw;
+                word-break: break-all;
+                text-align: center;
+            }
+            .toast.show {
+                opacity: 0.92;
+                transform: translateX(-50%) translateY(0);
+            }
+        </style>
+    </head>
+    <body>
+        <header class="top-bar">
+            <div class="addr" id="addr">
+                <span class="host" id="hostDisplay"></span>
+                <input class="path-input" id="pathInput" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" />
+                <span class="icon" id="statusIcon">💾</span>
+                <span class="dot saved" id="statusDot"></span>
+            </div>
+        </header>
 
-    <script>
-      const editor = document.getElementById("note-editor");
-      const STORAGE_PREFIX = "note-hehu-fun-";
+        <div class="editor-wrap">
+            <textarea id="note-editor" autofocus placeholder="✍️"></textarea>
+        </div>
 
-      // 获取当前路径
-      function getPath() {
-        let p = window.location.pathname;
-        p = p.replace(/^\/+|\/+$/g, "");
-        return p ? "/" + p : "/";
-      }
+        <footer class="footer" id="clock"></footer>
+        <div class="toast" id="toast"></div>
 
-      // 存储 key
-      function getKey() {
-        return STORAGE_PREFIX + getPath();
-      }
+        <script>
+            (function () {
+                'use strict';
 
-      // 加载
-      function load() {
-        editor.value = localStorage.getItem(getKey()) || "";
-        document.title = "记事本 " + getPath();
-      }
+                const editor = document.getElementById('note-editor');
+                const hostDisplay = document.getElementById('hostDisplay');
+                const pathInput = document.getElementById('pathInput');
+                const statusIcon = document.getElementById('statusIcon');
+                const statusDot = document.getElementById('statusDot');
+                const clock = document.getElementById('clock');
 
-      // 保存（防抖）
-      let timer;
-      function save() {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          localStorage.setItem(getKey(), editor.value);
-        }, 500);
-      }
+                const STORAGE_PREFIX = 'note-hehu-fun-';
+                const isFile = location.protocol === 'file:';
 
-      // Tab 缩进
-      editor.addEventListener("keydown", (e) => {
-        if (e.key === "Tab") {
-          e.preventDefault();
-          const s = editor.selectionStart;
-          editor.value =
-            editor.value.substring(0, s) +
-            "\t" +
-            editor.value.substring(editor.selectionEnd);
-          editor.selectionStart = editor.selectionEnd = s + 1;
-          save();
-        }
-      });
+                function normalize(p) {
+                    p = (p || '').trim();
+                    if (!p.startsWith('/')) p = '/' + p;
+                    p = p.replace(/\/+$/, '');
+                    return p === '' ? '/' : p;
+                }
+                function decodePath(p) {
+                    return (p || '').split('/').map(function (seg) {
+                        if (!seg) return seg;
+                        try {
+                            return decodeURIComponent(seg);
+                        } catch (e) {
+                            return seg;
+                        }
+                    }).join('/');
+                }
+                function keyPath() {
+                    if (isFile) {
+                        const h = location.hash ? location.hash.slice(1) : '';
+                        return normalize(decodePath(h));
+                    }
+                    return normalize(decodePath(location.pathname));
+                }
+                let currentPath = keyPath();
+                if (!isFile && location.host) {
+                    hostDisplay.textContent = location.host + '/';
+                } else {
+                    hostDisplay.textContent = '📄 本地/';
+                }
+                pathInput.value = currentPath === '/' ? '' : currentPath.slice(1);
 
-      // 自动保存
-      editor.addEventListener("input", save);
-      window.addEventListener("beforeunload", save);
+                function getKey() {
+                    return STORAGE_PREFIX + currentPath;
+                }
 
-      // 初始化
-      load();
-    </script>
-  </body>
+                function setStatus(icon, state) {
+                    statusIcon.textContent = icon;
+                    statusIcon.className = 'icon' + (state === 'typing' || state === 'loading' ? ' ' + state : '');
+                    statusIcon.title = fullUrl();
+                    statusDot.className = 'dot ' + state;
+                    statusDot.title = fullUrl();
+                }
+                let timer = null;
+                function showSaved() {
+                    setStatus('💾', 'saved');
+                }
+                function showTyping() {
+                    setStatus('✍️', 'typing');
+                    clearTimeout(timer);
+                    timer = setTimeout(showSaved, 800);
+                }
+                function showLoading() {
+                    setStatus('🔄', 'loading');
+                    setTimeout(showSaved, 300);
+                }
+
+                function load() {
+                    showLoading();
+                    const val = localStorage.getItem(getKey()) || '';
+                    editor.value = val;
+                    if (val) editor.setSelectionRange(val.length, val.length);
+                    setTimeout(showSaved, 120);
+                }
+
+                let saveTimer = null;
+                function save() {
+                    clearTimeout(saveTimer);
+                    saveTimer = setTimeout(() => {
+                        localStorage.setItem(getKey(), editor.value);
+                        showSaved();
+                    }, 400);
+                }
+
+                editor.addEventListener('keydown', (e) => {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const start = editor.selectionStart;
+                        editor.value =
+                            editor.value.substring(0, start) +
+                            '\t' +
+                            editor.value.substring(editor.selectionEnd);
+                        editor.selectionStart = editor.selectionEnd = start + 1;
+                        save();
+                        showTyping();
+                    }
+                });
+                editor.addEventListener('input', () => {
+                    save();
+                    showTyping();
+                });
+                window.addEventListener('beforeunload', () => {
+                    localStorage.setItem(getKey(), editor.value);
+                });
+
+                function navigateTo(raw) {
+                    let target = (raw || '').trim();
+                    if (target && !target.startsWith('/')) target = '/' + target;
+                    target = normalize(decodePath(target));
+                    if (target === currentPath) {
+                        editor.focus();
+                        return;
+                    }
+                    currentPath = target;
+                    pathInput.value = target === '/' ? '' : target.slice(1);
+                    if (isFile) {
+                        if (target === '/') {
+                            if (location.hash) history.replaceState(null, '', location.pathname);
+                            load();
+                        } else {
+                            location.hash = target;
+                        }
+                        return;
+                    }
+                    try {
+                        history.pushState({ path: target }, '', target);
+                    } catch (err) {
+                        location.hash = target;
+                    }
+                    load();
+                }
+
+                pathInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        navigateTo(pathInput.value);
+                        editor.focus();
+                    }
+                });
+                pathInput.addEventListener('focus', () => pathInput.select());
+                window.addEventListener('popstate', () => {
+                    if (isFile) return;
+                    currentPath = keyPath();
+                    pathInput.value = currentPath === '/' ? '' : currentPath.slice(1);
+                    load();
+                });
+                window.addEventListener('hashchange', () => {
+                    if (!isFile) return;
+                    currentPath = keyPath();
+                    pathInput.value = currentPath === '/' ? '' : currentPath.slice(1);
+                    load();
+                });
+
+                const addr = document.getElementById('addr');
+                const toast = document.getElementById('toast');
+                let toastTimer = null;
+
+                function fullUrl() {
+                    if (isFile) {
+                        return location.pathname + '#' + currentPath;
+                    }
+                    return location.origin + currentPath;
+                }
+                function fallbackCopy(text) {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    try {
+                        document.execCommand('copy');
+                    } catch (e) {}
+                    document.body.removeChild(ta);
+                }
+                function showCopied() {
+                    toast.textContent = fullUrl() + ' ✅';
+                    toast.classList.add('show');
+                    clearTimeout(toastTimer);
+                    toastTimer = setTimeout(function () {
+                        toast.classList.remove('show');
+                    }, 2000);
+                }
+                function copyLink() {
+                    const url = fullUrl();
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(url).then(showCopied, function () {
+                            fallbackCopy(url);
+                            showCopied();
+                        });
+                    } else {
+                        fallbackCopy(url);
+                        showCopied();
+                    }
+                }
+                addr.addEventListener('click', function (e) {
+                    if (e.target === pathInput) return;
+                    copyLink();
+                });
+
+                function updateClock() {
+                    const now = new Date();
+                    clock.textContent = now.toLocaleString([], {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                    });
+                }
+                updateClock();
+                setInterval(updateClock, 1000);
+
+                load();
+            })();
+        </script>
+        <script>
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+        </script>
+    </body>
 </html>
