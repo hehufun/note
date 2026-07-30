@@ -12,8 +12,10 @@
 │               │    └──────────── 点击 → 输入 ID            │
 │               └───────────────── 上传                     │
 │                                                         │
-│  gzip(text) → PUT /work%2Fnotes → Worker → KV           │
-│  GET /work%2Fnotes → ungzip → editor.value              │
+│  gzip(text) → PUT /{sid}?p={path} → Worker → KV         │
+│  GET /{sid}?p={path} → ungzip → editor.value             │
+│                                                         │
+│  key = sid + "::" + path  （:: 分隔，防碰撞）              │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -23,18 +25,21 @@
 
 ### KV 键设计
 
-| 要素                   | 限制                    | 说明                                                                        |
-| ---------------------- | ----------------------- | --------------------------------------------------------------------------- |
-| 页面路径 `currentPath` | ≤16 字符                | 顶部输入栏，HTML `maxlength` + JS `slice(0,16)` 双重兜底                    |
-| 同步 ID `syncId`       | ≤16 字符                | 底部 🟢 点击输入，同样双重兜底                                              |
-| KV key                 | `{syncId}{currentPath}` | 例 `work/notes`，经 `encodeURIComponent` 最坏 ~96 bytes，远低于 KV 512 上限 |
+| 要素                   | 限制                    | 说明                                                                                |
+| ---------------------- | ----------------------- | ----------------------------------------------------------------------------------- |
+| 同步 ID `syncId`       | ≤16 字符                | URL path 传递，`encodeURIComponent` 编码，支持 `/`、中文、emoji 等                    |
+| 页面路径 `pagePath`    | ≤16 字符                | query param `?p=` 传递，同样 `encodeURIComponent`，同样支持任意字符                    |
+| KV key                 | `{sid} + "::" + {path}` | `"::"` 分隔防止意外碰撞（例 `a/b`+`/c` 与 `a`+`/b/c` 不再冲突）                      |
+| API URL 格式            | `PUT/GET /{sid}?p={path}` | 两个参数独立编码，Worker 端各自 `decodeURIComponent` 还原                             |
 
 **按页面独立同步**：
 
-- ID `work` + 页面 `/notes` → KV `work/notes`
-- ID `work` + 页面 `/todo` → KV `work/todo`
-- ID `home` + 页面 `/notes` → KV `home/notes`
+- ID `work` + 页面 `/notes` → URL `/work?p=%2Fnotes` → KV `work::/notes`
+- ID `work` + 页面 `/todo` → URL `/work?p=%2Ftodo` → KV `work::/todo`
+- ID `home` + 页面 `/notes` → URL `/home?p=%2Fnotes` → KV `home::/notes`
 - 上传只传当前页，下载只取当前页，互不干扰
+
+> **与旧设计的区别**：旧方案直接把 `{sid}{path}` 拼接成 `/work/notes`，如果 sid 含 `/` 则边界模糊、可能碰撞。新方案将 sid 放 path、path 放 query，各自独立编码，Worker 以 `::` 分隔存为 KV key，彻底防碰撞。
 
 ### 用户交互
 
@@ -98,20 +103,27 @@ cd note-sync-worker
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const id = url.pathname.slice(1); // strip leading /
+    const rawSid = url.pathname.slice(1);
+    const rawPath = url.searchParams.get("p");
 
-    if (!id) {
-      return new Response("missing id", { status: 400 });
+    if (!rawSid || rawPath === null) {
+      return new Response("missing syncId or path", { status: 400 });
     }
+
+    // decodeURIComponent 还原编码前的原始 syncId 和 pagePath
+    // （二者都可以包含 /、中文、emoji 等任意字符）
+    const sid = decodeURIComponent(rawSid);
+    const pagePath = decodeURIComponent(rawPath);
+    const key = sid + "::" + pagePath; // "::" 防止不同组合算出相同 key
 
     if (request.method === "PUT") {
       const body = await request.arrayBuffer();
-      await env.SYNC.put(id, body);
+      await env.SYNC.put(key, body);
       return new Response("ok", { status: 200 });
     }
 
     if (request.method === "GET") {
-      const data = await env.SYNC.get(id, "arrayBuffer");
+      const data = await env.SYNC.get(key, "arrayBuffer");
       if (!data) {
         return new Response("not found", { status: 404 });
       }
@@ -189,64 +201,25 @@ const SYNC_API = ""; // TODO: set after deploying Worker
 const SYNC_API = "https://sync.hehu.fun";
 ```
 
-### 7.2 替换同步函数
+### 7.2 对接同步函数（如还未替换）
 
-找到 `syncUploadAction` 和 `syncDownloadAction` 中的 `setTimeout(..., 600)` 模拟代码，替换为：
+`index.html` 里 `syncUploadAction` 和 `syncDownloadAction` 已替换为真实实现，部署 Worker 后只需改 `SYNC_API` 地址。
+
+如需手动确认，两个函数的核心调用代码如下（方案B：`PUT/GET /{sid}?p={path}`）：
 
 ```js
 // === 上传 ===
-async function syncUploadAction() {
-  var wasLocked = lockForSync();
-  setSyncDot("loading");
-  setSyncBusy(true);
-  try {
-    const text = editor.value;
-    const key = encodeURIComponent(syncIdInput.value.trim() + currentPath);
-    const encoder = new TextEncoder();
-    const stream = new Blob([encoder.encode(text)])
-      .stream()
-      .pipeThrough(new CompressionStream("gzip"));
-    const compressed = await new Response(stream).arrayBuffer();
-    const resp = await fetch(SYNC_API + "/" + key, {
-      method: "PUT",
-      body: compressed,
-    });
-    setSyncDot(resp.ok ? "saved" : "error");
-  } catch (e) {
-    setSyncDot("error");
-  }
-  setSyncBusy(false);
-  unlockAfterSync(wasLocked);
-}
+var sid = syncIdInput.value.trim();
+var u = SYNC_API
+  + "/" + encodeURIComponent(sid)
+  + "?p=" + encodeURIComponent(currentPath);
+var resp = await fetch(u, { method: "PUT", body: compressed });
 
 // === 下载 ===
-async function syncDownloadAction() {
-  var wasLocked = lockForSync();
-  setSyncDot("loading");
-  setSyncBusy(true);
-  try {
-    const key = encodeURIComponent(syncIdInput.value.trim() + currentPath);
-    const resp = await fetch(SYNC_API + "/" + key);
-    if (!resp.ok) {
-      setSyncDot("error");
-      setSyncBusy(false);
-      unlockAfterSync(wasLocked);
-      return;
-    }
-    const compressed = await resp.arrayBuffer();
-    const stream = new Blob([compressed])
-      .stream()
-      .pipeThrough(new DecompressionStream("gzip"));
-    const text = await new Response(stream).text();
-    editor.value = text;
-    saveNow();
-    setSyncDot("saved");
-  } catch (e) {
-    setSyncDot("error");
-  }
-  setSyncBusy(false);
-  unlockAfterSync(wasLocked);
-}
+var u = SYNC_API
+  + "/" + encodeURIComponent(sid)
+  + "?p=" + encodeURIComponent(currentPath);
+var resp = await fetch(u);
 ```
 
 ---

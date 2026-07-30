@@ -623,7 +623,7 @@
         });
 
         // Cloud sync (CF Worker backend placeholder)
-        const SYNC_API = ""; // TODO: set after deploying Worker
+        const SYNC_API = "https://note-sync.hehufun.workers.dev";
         const SYNC_KEY = "note-hehu-fun-cloud-sync-id";
 
         var syncIdInput = document.getElementById("syncIdInput");
@@ -702,26 +702,54 @@
           var wasLocked = lockForSync();
           setSyncDot("loading");
           setSyncBusy(true);
-          // TODO: gzip editor.value → PUT SYNC_API + syncId + currentPath
-          // key = syncIdInput.value.trim() + currentPath  (per-page sync)
-          setTimeout(function () {
+          try {
+            var sid = syncIdInput.value.trim();
+            var text = editor.value;
+            var stream = new Blob([new TextEncoder().encode(text)])
+              .stream()
+              .pipeThrough(new CompressionStream("gzip"));
+            var compressed = await new Response(stream).arrayBuffer();
+            var u = SYNC_API
+              + "/" + encodeURIComponent(sid)
+              + "?p=" + encodeURIComponent(currentPath);
+            var resp = await fetch(u, { method: "PUT", body: compressed });
+            if (!resp.ok) { throw new Error("HTTP " + resp.status + " " + (await resp.text())); }
             setSyncDot("saved");
-            setSyncBusy(false);
-            unlockAfterSync(wasLocked);
-          }, 600);
+          } catch (e) {
+            console.error("upload fail:", e);
+            alert("❌ " + e.message);
+            setSyncDot("error");
+          }
+          setSyncBusy(false);
+          unlockAfterSync(wasLocked);
         }
 
         async function syncDownloadAction() {
           var wasLocked = lockForSync();
           setSyncDot("loading");
           setSyncBusy(true);
-          // TODO: GET SYNC_API + syncId + currentPath → ungzip → editor.value
-          // key = syncIdInput.value.trim() + currentPath  (per-page sync)
-          setTimeout(function () {
+          try {
+            var sid = syncIdInput.value.trim();
+            var u = SYNC_API
+              + "/" + encodeURIComponent(sid)
+              + "?p=" + encodeURIComponent(currentPath);
+            var resp = await fetch(u);
+            if (!resp.ok) { throw new Error("HTTP " + resp.status + " " + (await resp.text())); }
+            var compressed = await resp.arrayBuffer();
+            var stream = new Blob([compressed])
+              .stream()
+              .pipeThrough(new DecompressionStream("gzip"));
+            var text = await new Response(stream).text();
+            editor.value = text;
+            saveNow();
             setSyncDot("saved");
-            setSyncBusy(false);
-            unlockAfterSync(wasLocked);
-          }, 600);
+          } catch (e) {
+            console.error("download fail:", e);
+            alert("❌ " + e.message);
+            setSyncDot("error");
+          }
+          setSyncBusy(false);
+          unlockAfterSync(wasLocked);
         }
 
         syncUpload.addEventListener("click", syncUploadAction);

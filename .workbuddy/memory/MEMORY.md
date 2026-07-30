@@ -38,4 +38,12 @@
 - 无加密、无鉴权——ID 即钥匙，用户自行选择复杂度防碰撞。
 - CF 免费额度：100K 请求/天、1GB KV 存储，个人笔记绰绰有余。
 - 同步 ID 存 `localStorage` key `note-hehu-fun-cloud-sync-id`，下次点击自动回填。
-- **当前状态：前端 UI 已实现，Worker 代码和 API 调用待部署后对接。**
+- **当前状态：前端 UI 已实现，Worker 已部署，最终 API 地址待确认。**
+
+## Cloud Sync 完成状态
+- **Worker 地址**: `https://note-sync.hehufun.workers.dev`
+- **KV Namespace ID**: `2cc26af505fd432886b6e4c575d16fa8`
+- **API 方案B**：`PUT/GET /{sid}?p={path}`，KV key = `sid + "::" + pagePath`
+- syncId 和 pagePath 各自 `encodeURIComponent` 独立传输，支持任意字符（含 `/`、中文、emoji）
+- Worker 端 `decodeURIComponent` 还原后以 `::` 分隔拼接为 KV key，防止碰撞
+- wrangler 配置位于 `worker/` 子目录（`note` 仓库内）

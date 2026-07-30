@@ -1,0 +1,7 @@
+name = "note-sync"
+main = "src/index.js"
+compatibility_date = "2026-07-30"
+
+[[kv_namespaces]]
+binding = "SYNC"
+id = "2cc26af505fd432886b6e4c575d16fa8"
