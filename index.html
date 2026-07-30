@@ -104,19 +104,19 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-            .top-bar .icon {
-                flex-shrink: 0;
-                width: 20px;
-                height: 20px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 15px;
-                line-height: 1;
-                cursor: pointer;
-                user-select: none;
-                opacity: 0.85;
-            }
+      .top-bar .icon {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        line-height: 1;
+        cursor: pointer;
+        user-select: none;
+        opacity: 0.85;
+      }
       .top-bar .icon.typing,
       .top-bar .icon.loading {
         animation: pulse 0.8s infinite alternate;
@@ -165,9 +165,12 @@
         background: var(--card);
         color: var(--text);
         border-radius: var(--radius);
-            border: 1px solid transparent;
-            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='28' font-size='26'%3E%E2%9C%8D%EF%B8%8F%3C/text%3E%3C/svg%3E") 4 28, text;
-          }
+        border: 1px solid transparent;
+        cursor:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='28' font-size='26'%3E%E2%9C%8D%EF%B8%8F%3C/text%3E%3C/svg%3E")
+            4 28,
+          text;
+      }
       #note-editor:focus {
         border-color: var(--border);
       }
@@ -307,12 +310,16 @@
 
         // Scroll direction on statusIcon — temporary override
         let scrollDirTimer = null;
-        editor.addEventListener("wheel", function (e) {
-          if (isLocked) return;
-          statusIcon.textContent = e.deltaY > 0 ? "👇" : "👆";
-          clearTimeout(scrollDirTimer);
-          scrollDirTimer = setTimeout(showSaved, 500);
-        }, { passive: true });
+        editor.addEventListener(
+          "wheel",
+          function (e) {
+            if (isLocked) return;
+            statusIcon.textContent = e.deltaY > 0 ? "👇" : "👆";
+            clearTimeout(scrollDirTimer);
+            scrollDirTimer = setTimeout(showSaved, 500);
+          },
+          { passive: true },
+        );
 
         function normalize(p) {
           p = (p || "").trim();
@@ -493,7 +500,7 @@
           document.body.removeChild(ta);
         }
         function showCopied(msg) {
-          toast.textContent = (msg || (fullUrl() + " ✅"));
+          toast.textContent = msg || fullUrl() + " ✅";
           toast.classList.add("show");
           clearTimeout(toastTimer);
           toastTimer = setTimeout(function () {
@@ -502,10 +509,15 @@
         }
         function copyToClipboard(text, msg) {
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(function () { showCopied(msg); }, function () {
-              fallbackCopy(text);
-              showCopied(msg);
-            });
+            navigator.clipboard.writeText(text).then(
+              function () {
+                showCopied(msg);
+              },
+              function () {
+                fallbackCopy(text);
+                showCopied(msg);
+              },
+            );
           } else {
             fallbackCopy(text);
             showCopied(msg);
