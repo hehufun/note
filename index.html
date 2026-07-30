@@ -160,8 +160,9 @@
         background: var(--card);
         color: var(--text);
         border-radius: var(--radius);
-        border: 1px solid transparent;
-      }
+            border: 1px solid transparent;
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='28' font-size='26'%3E%E2%9C%8D%EF%B8%8F%3C/text%3E%3C/svg%3E") 4 28, text;
+          }
       #note-editor:focus {
         border-color: var(--border);
       }
@@ -298,6 +299,15 @@
 
         const STORAGE_PREFIX = "note-hehu-fun-";
         const isFile = location.protocol === "file:";
+
+        // Scroll direction on statusIcon — temporary override
+        let scrollDirTimer = null;
+        editor.addEventListener("wheel", function (e) {
+          if (isLocked) return;
+          statusIcon.textContent = e.deltaY > 0 ? "👇" : "👆";
+          clearTimeout(scrollDirTimer);
+          scrollDirTimer = setTimeout(showSaved, 500);
+        }, { passive: true });
 
         function normalize(p) {
           p = (p || "").trim();
@@ -477,28 +487,34 @@
           } catch (e) {}
           document.body.removeChild(ta);
         }
-        function showCopied() {
-          toast.textContent = fullUrl() + " ✅";
+        function showCopied(msg) {
+          toast.textContent = (msg || (fullUrl() + " ✅"));
           toast.classList.add("show");
           clearTimeout(toastTimer);
           toastTimer = setTimeout(function () {
             toast.classList.remove("show");
           }, 2000);
         }
-        function copyLink() {
-          const url = fullUrl();
+        function copyToClipboard(text, msg) {
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(showCopied, function () {
-              fallbackCopy(url);
-              showCopied();
+            navigator.clipboard.writeText(text).then(function () { showCopied(msg); }, function () {
+              fallbackCopy(text);
+              showCopied(msg);
             });
           } else {
-            fallbackCopy(url);
-            showCopied();
+            fallbackCopy(text);
+            showCopied(msg);
           }
         }
+        function copyLink() {
+          copyToClipboard(fullUrl());
+        }
+        statusIcon.addEventListener("click", function (e) {
+          e.stopPropagation();
+          copyToClipboard(editor.value, "📋 ✅");
+        });
         addr.addEventListener("click", function (e) {
-          if (e.target === pathInput) return;
+          if (e.target === pathInput || e.target === statusIcon) return;
           copyLink();
         });
 
