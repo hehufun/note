@@ -47,3 +47,8 @@
 - syncId 和 pagePath 各自 `encodeURIComponent` 独立传输，支持任意字符（含 `/`、中文、emoji）
 - Worker 端 `decodeURIComponent` 还原后以 `::` 分隔拼接为 KV key，防止碰撞
 - wrangler 配置位于 `worker/` 子目录（`note` 仓库内）
+
+## 已知问题
+- **国内网络访问 CF Workers 不稳定**：上传/下载操作在国内网络下可能超时失败（`ERR_CONNECTION_TIMED_OUT`）。Cloudflare Workers 的 global network 在国内没有直连节点，依赖动态路由，有时快有时连不上。暂无完美解决方案，可考虑：
+  - 使用国内云厂商的边缘函数替代（如腾讯云 SCF、阿里云 FC）
+  - 或接受间歇性不可用，仅在网络通畅时使用同步功能
