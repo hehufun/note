@@ -104,14 +104,19 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .top-bar .icon {
-        flex-shrink: 0;
-        font-size: 14px;
-        line-height: 1;
-        cursor: pointer;
-        user-select: none;
-        opacity: 0.85;
-      }
+            .top-bar .icon {
+                flex-shrink: 0;
+                width: 20px;
+                height: 20px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 15px;
+                line-height: 1;
+                cursor: pointer;
+                user-select: none;
+                opacity: 0.85;
+            }
       .top-bar .icon.typing,
       .top-bar .icon.loading {
         animation: pulse 0.8s infinite alternate;
