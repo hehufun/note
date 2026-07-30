@@ -25,8 +25,10 @@ export default {
       return corsify(new Response("missing path", { status: 400 }));
     }
 
+    // url.pathname 保留百分号编码 → 需要 decodeURIComponent
+    // url.searchParams.get("p") 已自动解码 → 直接用
     const sid = decodeURIComponent(rawSid);
-    const pagePath = decodeURIComponent(rawPath);
+    const pagePath = rawPath;
     const key = sid + "::" + pagePath;
 
     if (request.method === "PUT") {

@@ -428,7 +428,9 @@
         }
         function keyPath() {
           const h = location.hash ? location.hash.slice(1) : "";
-          return normalize(decodePath(h));
+          // Strip only trailing ?id=... param, leave other ? in path untouched
+          const stripped = h.replace(/\?id=[^&]*$/, "");
+          return normalize(decodePath(stripped));
         }
         let currentPath = keyPath();
         if (!isFile && location.host) {
@@ -570,7 +572,9 @@
         function fullUrl() {
           var url = location.origin + location.pathname + "#" + currentPath;
           var id = syncIdInput.value.trim();
-          if (id) url += "?id=" + encodeURIComponent(id);
+          if (id) url += "?id=" + id.replace(/[&#]/g, function (c) {
+            return "%" + c.charCodeAt(0).toString(16).toUpperCase();
+          });
           return url;
         }
         function fallbackCopy(text) {
@@ -635,10 +639,11 @@
 
         (function () {
           var v = localStorage.getItem(SYNC_KEY) || "";
-          // Override with ?id= from URL if present
-          var m = location.search.match(/[?&]id=([^&]*)/);
-          if (m) {
-            v = decodeURIComponent(m[1]).slice(0, 16);
+          // Override with ?id= from hash or search
+          var idMatch = location.hash.match(/[?&]id=([^&]*)/)
+            || location.search.match(/[?&]id=([^&]*)/);
+          if (idMatch) {
+            v = decodeURIComponent(idMatch[1]).slice(0, 16);
             localStorage.setItem(SYNC_KEY, v);
           }
           syncIdInput.value = v;
@@ -717,7 +722,6 @@
             setSyncDot("saved");
           } catch (e) {
             console.error("upload fail:", e);
-            alert("❌ " + e.message);
             setSyncDot("error");
           }
           setSyncBusy(false);
@@ -745,7 +749,6 @@
             setSyncDot("saved");
           } catch (e) {
             console.error("download fail:", e);
-            alert("❌ " + e.message);
             setSyncDot("error");
           }
           setSyncBusy(false);

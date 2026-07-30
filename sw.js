@@ -1,4 +1,4 @@
-const CACHE = "note-v1.1";
+const CACHE = "note-v2.1";
 const ASSETS = [
   "index.html",
   "icon.svg",
