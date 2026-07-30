@@ -1,466 +1,527 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-        <meta name="theme-color" content="#f5f3f0" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="icon" type="image/svg+xml" href="icon.svg" />
-        <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-        <link rel="manifest" href="manifest.webmanifest" />
-        <title>📝</title>
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-            :root {
-                --bg: #f5f3f0;
-                --card: #fff;
-                --text: #2c2c2c;
-                --muted: #7a7a7a;
-                --border: #e6e2dc;
-                --radius: 12px;
-                --font: system-ui, -apple-system, sans-serif;
-            }
-            @media (prefers-color-scheme: dark) {
-                :root {
-                    --bg: #191919;
-                    --card: #262626;
-                    --text: #e8e6e2;
-                    --muted: #8a8a8a;
-                    --border: #333;
-                }
-            }
-            html,
-            body {
-                height: 100vh;
-                height: 100dvh;
-            }
-            body {
-                overflow: hidden;
-                background: var(--bg);
-                color: var(--text);
-                font: 13px/1.5 var(--font);
-                display: flex;
-                flex-direction: column;
-                padding: calc(10px + env(safe-area-inset-top))
-                    calc(14px + env(safe-area-inset-right))
-                    calc(8px + env(safe-area-inset-bottom))
-                    calc(14px + env(safe-area-inset-left));
-            }
-            .top-bar {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding-bottom: 8px;
-                border-bottom: 1px solid var(--border);
-                color: var(--muted);
-            }
-            .top-bar .addr {
-                display: flex;
-                align-items: center;
-                min-width: 0;
-                flex: 1;
-                overflow: hidden;
-                cursor: pointer;
-                user-select: none;
-                gap: 6px;
-            }
-            .top-bar .addr .host,
-            .top-bar .addr .path-input {
-                cursor: text;
-                user-select: text;
-            }
-            .top-bar .host {
-                color: var(--muted);
-                font-size: 14px;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            .top-bar .path-input {
-                flex: 1;
-                min-width: 0;
-                border: none;
-                outline: none;
-                background: transparent;
-                color: var(--text);
-                font: 14px/1.5 var(--font);
-                padding: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .top-bar .icon {
-                flex-shrink: 0;
-                font-size: 14px;
-                line-height: 1;
-                cursor: pointer;
-                user-select: none;
-                opacity: 0.85;
-            }
-            .top-bar .icon.typing,
-            .top-bar .icon.loading {
-                animation: pulse 0.8s infinite alternate;
-            }
-            .top-bar .dot {
-                width: 9px;
-                height: 9px;
-                border-radius: 50%;
-                background: var(--muted);
-                flex-shrink: 0;
-            }
-            .top-bar .dot.saved {
-                background: #4caf50;
-            }
-            .top-bar .dot.typing {
-                background: #ffb74d;
-                animation: pulse 0.8s infinite alternate;
-            }
-            .top-bar .dot.loading {
-                background: #90a4ae;
-                animation: pulse 0.6s infinite alternate;
-            }
-            @keyframes pulse {
-                from {
-                    opacity: 0.4;
-                }
-                to {
-                    opacity: 1;
-                }
-            }
-            .editor-wrap {
-                flex: 1;
-                min-height: 0;
-                padding: 8px 0 6px;
-            }
-            #note-editor {
-                width: 100%;
-                height: 100%;
-                border: none;
-                outline: none;
-                resize: none;
-                padding: 14px 16px;
-                font: 14px/1.6 var(--font);
-                white-space: pre-wrap;
-                tab-size: 4;
-                background: var(--card);
-                color: var(--text);
-                border-radius: var(--radius);
-                border: 1px solid transparent;
-            }
-            #note-editor:focus {
-                border-color: var(--border);
-            }
-            #note-editor::placeholder {
-                color: var(--muted);
-                opacity: 0.5;
-                font-size: 16px;
-            }
-            #note-editor::-webkit-scrollbar {
-                width: 5px;
-            }
-            #note-editor::-webkit-scrollbar-thumb {
-                background: var(--border);
-                border-radius: 10px;
-            }
-            .footer {
-                flex-shrink: 0;
-                padding-top: 4px;
-                text-align: center;
-                font-size: 12px;
-                color: var(--muted);
-                opacity: 0.4;
-            }
-            .footer:hover {
-                opacity: 0.8;
-            }
-            .toast {
-                position: fixed;
-                left: 50%;
-                bottom: 26px;
-                transform: translateX(-50%) translateY(8px);
-                background: var(--text);
-                color: var(--bg);
-                padding: 6px 12px;
-                border-radius: 8px;
-                font-size: 12px;
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.2s ease, transform 0.2s ease;
-                z-index: 50;
-                max-width: 90vw;
-                word-break: break-all;
-                text-align: center;
-            }
-            .toast.show {
-                opacity: 0.92;
-                transform: translateX(-50%) translateY(0);
-            }
-        </style>
-    </head>
-    <body>
-        <header class="top-bar">
-            <div class="addr" id="addr">
-                <span class="host" id="hostDisplay"></span>
-                <input class="path-input" id="pathInput" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" />
-                <span class="icon" id="statusIcon">💾</span>
-                <span class="dot saved" id="statusDot"></span>
-            </div>
-        </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta
+      name="theme-color"
+      content="#f5f3f0"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#191919"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <title>📝</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #f5f3f0;
+        --card: #fff;
+        --text: #2c2c2c;
+        --muted: #7a7a7a;
+        --border: #e6e2dc;
+        --radius: 12px;
+        --font: system-ui, -apple-system, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #191919;
+          --card: #262626;
+          --text: #e8e6e2;
+          --muted: #8a8a8a;
+          --border: #333;
+        }
+      }
+      html,
+      body {
+        height: 100vh;
+        height: 100dvh;
+      }
+      body {
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font: 13px/1.5 var(--font);
+        display: flex;
+        flex-direction: column;
+        padding: calc(10px + env(safe-area-inset-top))
+          calc(14px + env(safe-area-inset-right))
+          calc(8px + env(safe-area-inset-bottom))
+          calc(14px + env(safe-area-inset-left));
+      }
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .top-bar .addr {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+        cursor: pointer;
+        user-select: none;
+        gap: 6px;
+      }
+      .top-bar .addr .host,
+      .top-bar .addr .path-input {
+        cursor: text;
+        user-select: text;
+      }
+      .top-bar .host {
+        color: var(--muted);
+        font-size: 14px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .top-bar .path-input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--text);
+        font: 14px/1.5 var(--font);
+        padding: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .top-bar .icon {
+        flex-shrink: 0;
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+        user-select: none;
+        opacity: 0.85;
+      }
+      .top-bar .icon.typing,
+      .top-bar .icon.loading {
+        animation: pulse 0.8s infinite alternate;
+      }
+      .top-bar .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--muted);
+        flex-shrink: 0;
+      }
+      .top-bar .dot.saved {
+        background: #4caf50;
+      }
+      .top-bar .dot.typing {
+        background: #ffb74d;
+        animation: pulse 0.8s infinite alternate;
+      }
+      .top-bar .dot.loading {
+        background: #90a4ae;
+        animation: pulse 0.6s infinite alternate;
+      }
+      @keyframes pulse {
+        from {
+          opacity: 0.4;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .editor-wrap {
+        flex: 1;
+        min-height: 0;
+        padding: 8px 0 6px;
+      }
+      #note-editor {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        resize: none;
+        padding: 14px 16px;
+        font: 14px/1.6 var(--font);
+        white-space: pre-wrap;
+        tab-size: 4;
+        background: var(--card);
+        color: var(--text);
+        border-radius: var(--radius);
+        border: 1px solid transparent;
+      }
+      #note-editor:focus {
+        border-color: var(--border);
+      }
+      #note-editor.locked {
+        cursor: default;
+        opacity: 0.85;
+      }
+      #note-editor::placeholder {
+        color: var(--muted);
+        opacity: 0.5;
+        font-size: 16px;
+      }
+      #note-editor::-webkit-scrollbar {
+        width: 5px;
+      }
+      #note-editor::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 10px;
+      }
+      .footer {
+        flex-shrink: 0;
+        padding-top: 4px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+        opacity: 0.4;
+      }
+      .footer:hover {
+        opacity: 0.8;
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 26px;
+        transform: translateX(-50%) translateY(8px);
+        background: var(--text);
+        color: var(--bg);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease;
+        z-index: 50;
+        max-width: 90vw;
+        word-break: break-all;
+        text-align: center;
+      }
+      .toast.show {
+        opacity: 0.92;
+        transform: translateX(-50%) translateY(0);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top-bar">
+      <div class="addr" id="addr">
+        <span class="host" id="hostDisplay"></span>
+        <input
+          class="path-input"
+          id="pathInput"
+          type="text"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+        />
+        <span class="icon" id="lockIcon">🔓</span>
+        <span class="icon" id="statusIcon">💾</span>
+        <span class="dot saved" id="statusDot"></span>
+      </div>
+    </header>
 
-        <div class="editor-wrap">
-            <textarea id="note-editor" autofocus placeholder="✍️"></textarea>
-        </div>
+    <div class="editor-wrap">
+      <textarea id="note-editor" autofocus placeholder="✍️"></textarea>
+    </div>
 
-        <footer class="footer" id="clock"></footer>
-        <div class="toast" id="toast"></div>
+    <footer class="footer" id="clock"></footer>
+    <div class="toast" id="toast"></div>
 
-        <script>
-            (function () {
-                'use strict';
+    <script>
+      (function () {
+        "use strict";
 
-                // Bootstrap redirect: if loaded from a real (non-root) pathname
-                // such as /1 — which happens when the Service Worker serves
-                // index.html for any path, or on a direct hit — rewrite to the
-                // canonical hash route /#/1 so keyPath() reads the deep path.
-                (function () {
-                    var p = location.pathname;
-                    if (p && p !== '/' && p !== '/index.html' && p !== '/404.html') {
-                        location.replace('/#' + p + location.search);
-                    }
-                })();
-                if (location.pathname !== '/' && location.pathname !== '/index.html' && location.pathname !== '/404.html' && !location.hash) {
-                    return; // hash navigation already scheduled; skip app init
-                }
+        // Bootstrap redirect: if loaded from a real (non-root) pathname
+        // such as /1 — which happens when the Service Worker serves
+        // index.html for any path, or on a direct hit — rewrite to the
+        // canonical hash route /#/1 so keyPath() reads the deep path.
+        (function () {
+          var p = location.pathname;
+          if (p && p !== "/" && p !== "/index.html" && p !== "/404.html") {
+            location.replace("/#" + p + location.search);
+          }
+        })();
+        if (
+          location.pathname !== "/" &&
+          location.pathname !== "/index.html" &&
+          location.pathname !== "/404.html" &&
+          !location.hash
+        ) {
+          return; // hash navigation already scheduled; skip app init
+        }
 
-                // Full-hash routing: the deep path lives in location.hash, so the
-                // app behaves identically on file://, COS and GitHub (root domain).
-                // 404.html maps any legacy real-path request back to a hash route.
+        // Full-hash routing: the deep path lives in location.hash, so the
+        // app behaves identically on file://, COS and GitHub (root domain).
+        // 404.html maps any legacy real-path request back to a hash route.
 
-                const editor = document.getElementById('note-editor');
-                const hostDisplay = document.getElementById('hostDisplay');
-                const pathInput = document.getElementById('pathInput');
-                const statusIcon = document.getElementById('statusIcon');
-                const statusDot = document.getElementById('statusDot');
-                const clock = document.getElementById('clock');
+        const editor = document.getElementById("note-editor");
+        const hostDisplay = document.getElementById("hostDisplay");
+        const pathInput = document.getElementById("pathInput");
+        const statusIcon = document.getElementById("statusIcon");
+        const statusDot = document.getElementById("statusDot");
+        const lockIcon = document.getElementById("lockIcon");
+        const clock = document.getElementById("clock");
 
-                const STORAGE_PREFIX = 'note-hehu-fun-';
-                const isFile = location.protocol === 'file:';
+        let isLocked = false;
 
-                function normalize(p) {
-                    p = (p || '').trim();
-                    if (!p.startsWith('/')) p = '/' + p;
-                    p = p.replace(/\/+$/, '');
-                    return p === '' ? '/' : p;
-                }
-                function decodePath(p) {
-                    return (p || '').split('/').map(function (seg) {
-                        if (!seg) return seg;
-                        try {
-                            return decodeURIComponent(seg);
-                        } catch (e) {
-                            return seg;
-                        }
-                    }).join('/');
-                }
-                function keyPath() {
-                    const h = location.hash ? location.hash.slice(1) : '';
-                    return normalize(decodePath(h));
-                }
-                let currentPath = keyPath();
-                if (!isFile && location.host) {
-                    hostDisplay.textContent = location.host + '/#/';
-                } else {
-                    hostDisplay.textContent = '📄 /#/';
-                }
-                pathInput.value = currentPath === '/' ? '' : currentPath.slice(1);
+        lockIcon.addEventListener("click", function (e) {
+          e.stopPropagation();
+          isLocked = !isLocked;
+          if (isLocked) {
+            editor.readOnly = true;
+            editor.classList.add("locked");
+            lockIcon.textContent = "🔒";
+            lockIcon.title = "🔒";
+          } else {
+            editor.readOnly = false;
+            editor.classList.remove("locked");
+            lockIcon.textContent = "🔓";
+            lockIcon.title = "🔓";
+          }
+        });
 
-                function getKey() {
-                    return STORAGE_PREFIX + currentPath;
-                }
+        const STORAGE_PREFIX = "note-hehu-fun-";
+        const isFile = location.protocol === "file:";
 
-                function setStatus(icon, state) {
-                    statusIcon.textContent = icon;
-                    statusIcon.className = 'icon' + (state === 'typing' || state === 'loading' ? ' ' + state : '');
-                    statusIcon.title = fullUrl();
-                    statusDot.className = 'dot ' + state;
-                    statusDot.title = fullUrl();
-                }
-                let timer = null;
-                function showSaved() {
-                    setStatus('💾', 'saved');
-                }
-                function showTyping() {
-                    setStatus('✍️', 'typing');
-                    clearTimeout(timer);
-                    timer = setTimeout(showSaved, 800);
-                }
-                function showLoading() {
-                    setStatus('🔄', 'loading');
-                    setTimeout(showSaved, 300);
-                }
+        function normalize(p) {
+          p = (p || "").trim();
+          if (!p.startsWith("/")) p = "/" + p;
+          p = p.replace(/\/+$/, "");
+          return p === "" ? "/" : p;
+        }
+        function decodePath(p) {
+          return (p || "")
+            .split("/")
+            .map(function (seg) {
+              if (!seg) return seg;
+              try {
+                return decodeURIComponent(seg);
+              } catch (e) {
+                return seg;
+              }
+            })
+            .join("/");
+        }
+        function keyPath() {
+          const h = location.hash ? location.hash.slice(1) : "";
+          return normalize(decodePath(h));
+        }
+        let currentPath = keyPath();
+        if (!isFile && location.host) {
+          hostDisplay.textContent = location.host + "/#/";
+        } else {
+          hostDisplay.textContent = "📄 /#/";
+        }
+        pathInput.value = currentPath === "/" ? "" : currentPath.slice(1);
 
-                function load() {
-                    showLoading();
-                    const val = localStorage.getItem(getKey()) || '';
-                    editor.value = val;
-                    if (val) editor.setSelectionRange(val.length, val.length);
-                    setTimeout(showSaved, 120);
-                }
+        function getKey() {
+          return STORAGE_PREFIX + currentPath;
+        }
 
-                let saveTimer = null;
-                function save() {
-                    clearTimeout(saveTimer);
-                    saveTimer = setTimeout(() => {
-                        localStorage.setItem(getKey(), editor.value);
-                        showSaved();
-                    }, 400);
-                }
-                function saveNow() {
-                    clearTimeout(saveTimer);
-                    localStorage.setItem(getKey(), editor.value);
-                    showSaved();
-                }
+        function setStatus(icon, state) {
+          statusIcon.textContent = icon;
+          statusIcon.className =
+            "icon" +
+            (state === "typing" || state === "loading" ? " " + state : "");
+          statusIcon.title = fullUrl();
+          statusDot.className = "dot " + state;
+          statusDot.title = fullUrl();
+        }
+        let timer = null;
+        function showSaved() {
+          setStatus("💾", "saved");
+        }
+        function showTyping() {
+          setStatus("✍️", "typing");
+          clearTimeout(timer);
+          timer = setTimeout(showSaved, 800);
+        }
+        function showLoading() {
+          setStatus("🔄", "loading");
+          setTimeout(showSaved, 300);
+        }
 
-                editor.addEventListener('keydown', (e) => {
-                    if (e.key === 'Tab') {
-                        e.preventDefault();
-                        const start = editor.selectionStart;
-                        editor.value =
-                            editor.value.substring(0, start) +
-                            '\t' +
-                            editor.value.substring(editor.selectionEnd);
-                        editor.selectionStart = editor.selectionEnd = start + 1;
-                        save();
-                        showTyping();
-                    }
-                });
-                editor.addEventListener('input', () => {
-                    save();
-                    showTyping();
-                });
-                window.addEventListener('beforeunload', () => {
-                    localStorage.setItem(getKey(), editor.value);
-                });
+        function load() {
+          showLoading();
+          const val = localStorage.getItem(getKey()) || "";
+          editor.value = val;
+          if (val) editor.setSelectionRange(val.length, val.length);
+          setTimeout(showSaved, 120);
+        }
 
-                function navigateTo(raw) {
-                    let target = (raw || '').trim();
-                    if (target && !target.startsWith('/')) target = '/' + target;
-                    target = normalize(decodePath(target));
-                    if (target === currentPath) {
-                        editor.focus();
-                        return;
-                    }
-                    currentPath = target;
-                    pathInput.value = target === '/' ? '' : target.slice(1);
-                    if (target === '/') {
-                        if (location.hash) history.replaceState(null, '', location.pathname);
-                    } else {
-                        location.hash = target;
-                    }
-                    load();
-                }
+        let saveTimer = null;
+        function save() {
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(() => {
+            localStorage.setItem(getKey(), editor.value);
+            showSaved();
+          }, 400);
+        }
+        function saveNow() {
+          clearTimeout(saveTimer);
+          localStorage.setItem(getKey(), editor.value);
+          showSaved();
+        }
 
-                pathInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        navigateTo(pathInput.value);
-                        editor.focus();
-                    }
-                });
-                pathInput.addEventListener('focus', () => pathInput.select());
-                window.addEventListener('popstate', () => {
-                    const p = keyPath();
-                    if (p === currentPath) return;
-                    currentPath = p;
-                    pathInput.value = p === '/' ? '' : p.slice(1);
-                    load();
-                });
-                window.addEventListener('hashchange', () => {
-                    const p = keyPath();
-                    if (p === currentPath) return;
-                    currentPath = p;
-                    pathInput.value = p === '/' ? '' : p.slice(1);
-                    load();
-                });
+        editor.addEventListener("keydown", (e) => {
+          if (e.key === "Tab") {
+            if (isLocked) {
+              e.preventDefault();
+              return;
+            }
+            e.preventDefault();
+            const start = editor.selectionStart;
+            editor.value =
+              editor.value.substring(0, start) +
+              "\t" +
+              editor.value.substring(editor.selectionEnd);
+            editor.selectionStart = editor.selectionEnd = start + 1;
+            save();
+            showTyping();
+          }
+        });
+        editor.addEventListener("input", () => {
+          if (isLocked) return;
+          save();
+          showTyping();
+        });
+        window.addEventListener("beforeunload", () => {
+          localStorage.setItem(getKey(), editor.value);
+        });
 
-                // Cross-instance sync: when this tab loses focus or is hidden, flush
-                // to storage immediately; when it regains focus/visibility, reload the
-                // latest saved content so same-path instances stay consistent.
-                window.addEventListener('blur', saveNow);
-                window.addEventListener('focus', load);
-                document.addEventListener('visibilitychange', function () {
-                    if (document.visibilityState === 'hidden') saveNow();
-                    else load();
-                });
+        function navigateTo(raw) {
+          let target = (raw || "").trim();
+          if (target && !target.startsWith("/")) target = "/" + target;
+          target = normalize(decodePath(target));
+          if (target === currentPath) {
+            editor.focus();
+            return;
+          }
+          currentPath = target;
+          pathInput.value = target === "/" ? "" : target.slice(1);
+          if (target === "/") {
+            if (location.hash)
+              history.replaceState(null, "", location.pathname);
+          } else {
+            location.hash = target;
+          }
+          load();
+        }
 
-                const addr = document.getElementById('addr');
-                const toast = document.getElementById('toast');
-                let toastTimer = null;
+        pathInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            navigateTo(pathInput.value);
+            editor.focus();
+          }
+        });
+        pathInput.addEventListener("focus", () => pathInput.select());
+        window.addEventListener("popstate", () => {
+          const p = keyPath();
+          if (p === currentPath) return;
+          currentPath = p;
+          pathInput.value = p === "/" ? "" : p.slice(1);
+          load();
+        });
+        window.addEventListener("hashchange", () => {
+          const p = keyPath();
+          if (p === currentPath) return;
+          currentPath = p;
+          pathInput.value = p === "/" ? "" : p.slice(1);
+          load();
+        });
 
-                function fullUrl() {
-                    return location.origin + location.pathname + '#' + currentPath;
-                }
-                function fallbackCopy(text) {
-                    const ta = document.createElement('textarea');
-                    ta.value = text;
-                    ta.style.position = 'fixed';
-                    ta.style.opacity = '0';
-                    document.body.appendChild(ta);
-                    ta.focus();
-                    ta.select();
-                    try {
-                        document.execCommand('copy');
-                    } catch (e) {}
-                    document.body.removeChild(ta);
-                }
-                function showCopied() {
-                    toast.textContent = fullUrl() + ' ✅';
-                    toast.classList.add('show');
-                    clearTimeout(toastTimer);
-                    toastTimer = setTimeout(function () {
-                        toast.classList.remove('show');
-                    }, 2000);
-                }
-                function copyLink() {
-                    const url = fullUrl();
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                        navigator.clipboard.writeText(url).then(showCopied, function () {
-                            fallbackCopy(url);
-                            showCopied();
-                        });
-                    } else {
-                        fallbackCopy(url);
-                        showCopied();
-                    }
-                }
-                addr.addEventListener('click', function (e) {
-                    if (e.target === pathInput) return;
-                    copyLink();
-                });
+        // Cross-instance sync: when this tab loses focus or is hidden, flush
+        // to storage immediately; when it regains focus/visibility, reload the
+        // latest saved content so same-path instances stay consistent.
+        window.addEventListener("blur", saveNow);
+        window.addEventListener("focus", load);
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "hidden") saveNow();
+          else load();
+        });
 
-                function updateClock() {
-                    const now = new Date();
-                    clock.textContent = now.toLocaleString([], {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                    });
-                }
-                updateClock();
-                setInterval(updateClock, 1000);
+        const addr = document.getElementById("addr");
+        const toast = document.getElementById("toast");
+        let toastTimer = null;
 
-                load();
-            })();
-        </script>
-        <script>
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-        </script>
-    </body>
+        function fullUrl() {
+          return location.origin + location.pathname + "#" + currentPath;
+        }
+        function fallbackCopy(text) {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          try {
+            document.execCommand("copy");
+          } catch (e) {}
+          document.body.removeChild(ta);
+        }
+        function showCopied() {
+          toast.textContent = fullUrl() + " ✅";
+          toast.classList.add("show");
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(function () {
+            toast.classList.remove("show");
+          }, 2000);
+        }
+        function copyLink() {
+          const url = fullUrl();
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(showCopied, function () {
+              fallbackCopy(url);
+              showCopied();
+            });
+          } else {
+            fallbackCopy(url);
+            showCopied();
+          }
+        }
+        addr.addEventListener("click", function (e) {
+          if (e.target === pathInput) return;
+          copyLink();
+        });
+
+        function updateClock() {
+          const now = new Date();
+          clock.textContent = now.toLocaleString([], {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        load();
+      })();
+    </script>
+    <script>
+      if ("serviceWorker" in navigator)
+        navigator.serviceWorker.register("sw.js");
+    </script>
+  </body>
 </html>
