@@ -17,6 +17,7 @@
       media="(prefers-color-scheme: dark)"
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="icon" type="image/svg+xml" href="icon.svg" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -64,6 +65,7 @@
           calc(14px + env(safe-area-inset-left));
       }
       .top-bar {
+        user-select: none;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -84,7 +86,7 @@
       .top-bar .addr .host,
       .top-bar .addr .path-input {
         cursor: text;
-        user-select: text;
+        user-select: none;
       }
       .top-bar .host {
         color: var(--muted);
@@ -121,30 +123,34 @@
       .top-bar .icon.loading {
         animation: pulse 0.8s infinite alternate;
       }
-      .top-bar .dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: var(--muted);
-        flex-shrink: 0;
-      }
-      .top-bar .dot.saved {
-        background: #4caf50;
-      }
-      .top-bar .dot.typing {
-        background: #ffb74d;
-        animation: pulse 0.8s infinite alternate;
-      }
-      .top-bar .dot.loading {
-        background: #90a4ae;
-        animation: pulse 0.6s infinite alternate;
-      }
       @keyframes pulse {
         from {
           opacity: 0.4;
         }
         to {
           opacity: 1;
+        }
+      }
+      @keyframes syncPulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.8);
+          opacity: 0.5;
+        }
+      }
+      @keyframes syncPop {
+        0% {
+          transform: scale(1);
+        }
+        40% {
+          transform: scale(2);
+        }
+        100% {
+          transform: scale(1);
         }
       }
       .editor-wrap {
@@ -192,14 +198,78 @@
       }
       .footer {
         flex-shrink: 0;
-        padding-top: 4px;
-        text-align: center;
+        padding-top: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
         font-size: 12px;
+        user-select: none;
         color: var(--muted);
-        opacity: 0.4;
+        opacity: 0.5;
       }
       .footer:hover {
-        opacity: 0.8;
+        opacity: 0.85;
+      }
+      .footer .sync-id-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .footer .sync-id-display {
+        color: var(--muted);
+        font: 12px/1.5 var(--font);
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .footer .sync-id-input {
+        display: none;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        font: 12px/1.5 var(--font);
+        padding: 0;
+        outline: none;
+        width: 100px;
+      }
+      .footer .sync-id-wrap.editing .sync-id-display {
+        display: none;
+      }
+      .footer .sync-id-wrap.editing .sync-id-input {
+        display: inline-block;
+      }
+      .footer .sync-btn {
+        cursor: pointer;
+        opacity: 0.6;
+        font-size: 13px;
+        transition:
+          opacity 0.15s,
+          transform 0.15s;
+      }
+      .footer .sync-btn:hover {
+        opacity: 1;
+        transform: scale(1.15);
+      }
+      .footer .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--muted);
+        flex-shrink: 0;
+      }
+      .footer .dot.saved {
+        background: #4caf50;
+        animation: syncPop 0.4s ease;
+      }
+      .footer .dot.loading {
+        background: #90a4ae;
+        animation: syncPulse 0.8s ease-in-out infinite;
+      }
+      .footer .dot.error {
+        background: #e24b4a;
+        animation: syncPop 0.4s ease;
       }
       .toast {
         position: fixed;
@@ -238,10 +308,10 @@
           spellcheck="false"
           autocapitalize="off"
           autocomplete="off"
+          maxlength="16"
         />
         <span class="icon" id="lockIcon">🔓</span>
         <span class="icon" id="statusIcon">💾</span>
-        <span class="dot saved" id="statusDot"></span>
       </div>
     </header>
 
@@ -249,7 +319,24 @@
       <textarea id="note-editor" autofocus placeholder="✍️"></textarea>
     </div>
 
-    <footer class="footer" id="clock"></footer>
+    <footer class="footer">
+      <span id="clock"></span>
+      <span class="sync-btn" id="syncUpload">⬆️</span>
+      <span class="dot saved" id="syncDot"></span>
+      <span class="sync-btn" id="syncDownload">⬇️</span>
+      <span class="sync-id-wrap" id="syncIdWrap">
+        <span class="sync-id-display" id="syncIdDisplay"></span>
+        <input
+          class="sync-id-input"
+          id="syncIdInput"
+          type="text"
+          maxlength="16"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+        />
+      </span>
+    </footer>
     <div class="toast" id="toast"></div>
 
     <script>
@@ -283,7 +370,6 @@
         const hostDisplay = document.getElementById("hostDisplay");
         const pathInput = document.getElementById("pathInput");
         const statusIcon = document.getElementById("statusIcon");
-        const statusDot = document.getElementById("statusDot");
         const lockIcon = document.getElementById("lockIcon");
         const clock = document.getElementById("clock");
 
@@ -362,8 +448,6 @@
             "icon" +
             (state === "typing" || state === "loading" ? " " + state : "");
           statusIcon.title = fullUrl();
-          statusDot.className = "dot " + state;
-          statusDot.title = fullUrl();
         }
         let timer = null;
         function showSaved() {
@@ -428,7 +512,7 @@
         });
 
         function navigateTo(raw) {
-          let target = (raw || "").trim();
+          let target = (raw || "").trim().slice(0, 16);
           if (target && !target.startsWith("/")) target = "/" + target;
           target = normalize(decodePath(target));
           if (target === currentPath) {
@@ -484,7 +568,10 @@
         let toastTimer = null;
 
         function fullUrl() {
-          return location.origin + location.pathname + "#" + currentPath;
+          var url = location.origin + location.pathname + "#" + currentPath;
+          var id = syncIdInput.value.trim();
+          if (id) url += "?id=" + encodeURIComponent(id);
+          return url;
         }
         function fallbackCopy(text) {
           const ta = document.createElement("textarea");
@@ -535,6 +622,111 @@
           copyLink();
         });
 
+        // Cloud sync (CF Worker backend placeholder)
+        const SYNC_API = ""; // TODO: set after deploying Worker
+        const SYNC_KEY = "note-hehu-fun-cloud-sync-id";
+
+        var syncIdInput = document.getElementById("syncIdInput");
+        var syncIdDisplay = document.getElementById("syncIdDisplay");
+        var syncIdWrap = document.getElementById("syncIdWrap");
+        var syncUpload = document.getElementById("syncUpload");
+        var syncDownload = document.getElementById("syncDownload");
+        var syncDot = document.getElementById("syncDot");
+
+        (function () {
+          var v = localStorage.getItem(SYNC_KEY) || "";
+          // Override with ?id= from URL if present
+          var m = location.search.match(/[?&]id=([^&]*)/);
+          if (m) {
+            v = decodeURIComponent(m[1]).slice(0, 16);
+            localStorage.setItem(SYNC_KEY, v);
+          }
+          syncIdInput.value = v;
+          syncIdDisplay.textContent = v;
+        })();
+
+        syncDot.addEventListener("click", function (e) {
+          e.stopPropagation();
+          syncIdWrap.classList.add("editing");
+          syncIdInput.focus();
+          syncIdInput.select();
+        });
+        syncIdInput.addEventListener("blur", function () {
+          commitSyncId();
+        });
+        syncIdInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            syncIdInput.blur();
+          }
+        });
+        function commitSyncId() {
+          var v = syncIdInput.value.trim().slice(0, 16);
+          syncIdInput.value = v;
+          syncIdDisplay.textContent = v;
+          localStorage.setItem(SYNC_KEY, v);
+          syncIdWrap.classList.remove("editing");
+        }
+
+        function setSyncDot(state) {
+          syncDot.className = "dot " + state;
+        }
+        function setSyncBusy(busy) {
+          syncUpload.style.pointerEvents = busy ? "none" : "";
+          syncDownload.style.pointerEvents = busy ? "none" : "";
+          syncUpload.style.opacity = busy ? ".3" : "";
+          syncDownload.style.opacity = busy ? ".3" : "";
+          lockIcon.style.pointerEvents = busy ? "none" : "";
+          lockIcon.style.opacity = busy ? ".3" : "";
+        }
+
+        function lockForSync() {
+          if (!isLocked) {
+            isLocked = true;
+            editor.readOnly = true;
+            editor.classList.add("locked");
+            lockIcon.textContent = "🔒";
+            return false; // was unlocked
+          }
+          return true; // was already locked
+        }
+        function unlockAfterSync(wasLocked) {
+          if (!wasLocked) {
+            isLocked = false;
+            editor.readOnly = false;
+            editor.classList.remove("locked");
+            lockIcon.textContent = "🔓";
+          }
+        }
+
+        async function syncUploadAction() {
+          var wasLocked = lockForSync();
+          setSyncDot("loading");
+          setSyncBusy(true);
+          // TODO: gzip editor.value → PUT SYNC_API + syncId + currentPath
+          // key = syncIdInput.value.trim() + currentPath  (per-page sync)
+          setTimeout(function () {
+            setSyncDot("saved");
+            setSyncBusy(false);
+            unlockAfterSync(wasLocked);
+          }, 600);
+        }
+
+        async function syncDownloadAction() {
+          var wasLocked = lockForSync();
+          setSyncDot("loading");
+          setSyncBusy(true);
+          // TODO: GET SYNC_API + syncId + currentPath → ungzip → editor.value
+          // key = syncIdInput.value.trim() + currentPath  (per-page sync)
+          setTimeout(function () {
+            setSyncDot("saved");
+            setSyncBusy(false);
+            unlockAfterSync(wasLocked);
+          }, 600);
+        }
+
+        syncUpload.addEventListener("click", syncUploadAction);
+        syncDownload.addEventListener("click", syncDownloadAction);
+
         function updateClock() {
           const now = new Date();
           clock.textContent = now.toLocaleString([], {
@@ -550,6 +742,11 @@
         setInterval(updateClock, 1000);
 
         load();
+
+        // Auto-download if URL carried ?id= param (fresh link from another device)
+        if (syncIdInput.value.trim()) {
+          setTimeout(syncDownloadAction, 300);
+        }
       })();
     </script>
     <script>

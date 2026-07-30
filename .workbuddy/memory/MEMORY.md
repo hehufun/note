@@ -28,3 +28,14 @@
 - 窗口失焦（`blur`）或隐藏（`visibilitychange:hidden`）→ 立即 `saveNow()` 落盘。
 - 获得焦点（`focus`）或可见（`visibilitychange:visible`）→ `load()` 重新载入，保证同路径的多个标签页/窗口内容一致。
 - 侧贴并排不会实时同步（仅随焦点切换同步），符合需求；如需实时可加 `storage` 事件监听（未做）。
+
+## 云端同步（Cloud Sync）规划
+- 目标：通过状态圆点 ⚫ 点击触发同步面板，输入自定义同步 ID，同一 ID 可跨设备共享笔记内容。
+- 后端：Cloudflare Worker + KV，两个端点：
+  - `PUT /api/sync/:id` — 接收 gzip 压缩后的 raw bytes，写入 KV。
+  - `GET /api/sync/:id` — 从 KV 读取 raw bytes 返回。
+- 前端压缩：浏览器原生 `CompressionStream('gzip')` / `DecompressionStream('gzip')`，零外部依赖。
+- 无加密、无鉴权——ID 即钥匙，用户自行选择复杂度防碰撞。
+- CF 免费额度：100K 请求/天、1GB KV 存储，个人笔记绰绰有余。
+- 同步 ID 存 `localStorage` key `note-hehu-fun-cloud-sync-id`，下次点击自动回填。
+- **当前状态：前端 UI 已实现，Worker 代码和 API 调用待部署后对接。**
